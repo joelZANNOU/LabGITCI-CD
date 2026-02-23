@@ -1,6 +1,6 @@
 # Création du bucket S3
 resource "aws_s3_bucket" "website_bucket" {
-  bucket = "bucket_jc_labCICD" # Remplacez par un nom unique
+  bucket = "bucket-jc-labcicd" # Nom unique conforme aux règles AWS
 }
 
 # # Politique du bucket pour permettre l'accès public en lecture
@@ -15,13 +15,27 @@ resource "aws_s3_bucket_policy" "website_bucket_policy" {
         Sid       = "PublicReadGetObject"
         Effect    = "Allow"
         Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.website_bucket.arn}/*"
+      },
+      {
+        Sid       = "AllowAuthenticatedUsersWrite"
+        Effect    = "Allow"
+        Principal = "*"
         Action    = [
-          "s3:GetObject",
           "s3:PutObject",
-          "s3:ListBucket"
+          "s3:DeleteObject"
         ]
-        Resource  = ["${aws_s3_bucket.website_bucket.arn}/*", "${aws_s3_bucket.website_bucket.arn}"]
+        Resource  = "${aws_s3_bucket.website_bucket.arn}/*"
+        Condition = {
+          StringLike = {
+            "aws:userId" = "*"
+          }
+          StringNotEquals = {
+            "aws:PrincipalType" = "Anonymous"
+          }
         }
+      }
     ]
   })
 }
@@ -63,7 +77,7 @@ resource "aws_s3_bucket_public_access_block" "website" {
 resource "aws_s3_bucket_acl" "website" {
   depends_on = [ aws_s3_bucket_ownership_controls.website ]
   bucket = aws_s3_bucket.website_bucket.id
-  acl    = "public-read-write"
+  acl    = "public-read"
 }
 
 
